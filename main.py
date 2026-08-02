@@ -102,7 +102,7 @@ def fetch_api_data(message):
     try:
         text_parts = message.text.split()
         if len(text_parts) < 3:
-            bot.reply_to(message, "❌ **Wrong Format!**\nUse: `/visit bd 9909964014`", parse_mode="Markdown")
+            bot.reply_to(message, "❌ **Wrong Format!**\nUse: `/visit bd 6461428401`", parse_mode="Markdown")
             return
 
         region, uid = text_parts[1].lower(), text_parts[2]
@@ -114,7 +114,7 @@ def fetch_api_data(message):
         if response.status_code == 200:
             data = response.json()
             formatted_json = json.dumps(data, indent=2, ensure_ascii=False)
-            final_text = f"✅ **SUCCESSFUL!**\n\n```json\n{formatted_json}\n```\n\n👨‍💻 Dev: `@BLACK_ADMIN_X`"
+            final_text = f"✅ **SUCCESSFUL!**\n\n```json\n{formatted_json}\n```\n\n👨‍💻 CREDIT: `@FREXY_OFC`"
             bot.edit_message_text(final_text, chat_id=sent_msg.chat.id, message_id=sent_msg.message_id, parse_mode="Markdown")
         else:
             bot.edit_message_text(f"❌ **API Error!** Status: {response.status_code}", chat_id=sent_msg.chat.id, message_id=sent_msg.message_id)
