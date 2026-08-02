@@ -29,7 +29,7 @@ START_TEXT = """
 ╭━⟮ 📋 ᴀᴠᴀɪʟᴀʙʟᴇ ᴄᴏᴍᴍᴀɴᴅs !
 │• ꜱᴇɴᴅ ᴘʀᴏꜰɪʟᴇ ᴠɪsɪᴛꜱ
 │• ╰ᐅ `/visit <ʀᴇɢɪᴏɴ> <ᴜɪᴅ>`
-│•  `POWAEED BY BLACK ADMIN`
+│•  `POWAEED BY FREXY`
 ╰━━━━━━━━━━━━━━━✪
  👨‍💻 CREDIT `@FREXY_OFC`
 """
