@@ -5,8 +5,8 @@ import time
 import threading
 
 # --- কনফিগারেশন ---
-API_TOKEN = '8650712089:AAFUdQDkkPVGv0gwQdUSRELvGUnOTf2062o'
-ADMIN_ID = 7090770573  # <--- এখানে আপনার টেলিগ্রাম আইডি দিন
+API_TOKEN = '8328152295:AAEl4ziJj4NAqpnqzpmEXM63F2yczxtoafs'
+ADMIN_ID = 6417430059  # <--- এখানে আপনার টেলিগ্রাম আইডি দিন
 
 bot = telebot.TeleBot(API_TOKEN)
 
@@ -31,7 +31,7 @@ START_TEXT = """
 │• ╰ᐅ `/visit <ʀᴇɢɪᴏɴ> <ᴜɪᴅ>`
 │•  `POWAEED BY BLACK ADMIN`
 ╰━━━━━━━━━━━━━━━✪
- 👨‍💻 Dev `@BLACK_ADMIN_X`
+ 👨‍💻 CREDIT `@FREXY_OFC`
 """
 
 # --- অটো ভিজিট হেল্পার ---
@@ -41,12 +41,12 @@ def run_auto_visit(chat_id, region, uid, minutes):
     
     # প্রথম হিটের ডাটা JSON ফরম্যাটে দেখাবে
     try:
-        api_url = f"http://192.168.0.100:5100/visit?uid={uid}&region={region}"
+        api_url = f"https://visit-api-frexy.onrender.com/visit?uid={uid}&region={region}"
         response = requests.get(api_url)
         if response.status_code == 200:
             data = response.json()
             formatted_json = json.dumps(data, indent=2, ensure_ascii=False)
-            bot.send_message(chat_id, f"✅ **SUCCESSFUL!**\n\n```json\n{formatted_json}\n```\n\n👨‍💻 Dev: `@BLACK_ADMIN_X`", parse_mode="Markdown")
+            bot.send_message(chat_id, f"✅ **SUCCESSFUL!**\n\n```json\n{formatted_json}\n```\n\n👨‍💻 CREDIT: `@FREXY_OFC`", parse_mode="Markdown")
         else:
             bot.send_message(chat_id, "❌ API Error during first hit.")
     except:
@@ -57,7 +57,7 @@ def run_auto_visit(chat_id, region, uid, minutes):
         
         if auto_visit_threads.get(user_key):
             try:
-                requests.get(f"http://192.168.0.100:5100/visit?uid={uid}&region={region}")
+                requests.get(f"https://visit-api-frexy.onrender.com/visit?uid={uid}&region={region}")
             except:
                 pass
 
@@ -108,7 +108,7 @@ def fetch_api_data(message):
         region, uid = text_parts[1].lower(), text_parts[2]
         sent_msg = bot.reply_to(message, "⏳ Processing your request... Please wait.")
 
-        api_url = f"http://192.168.0.100:5100/visit?uid={uid}&region={region}"
+        api_url = f"https://visit-api-frexy.onrender.com/visit?uid={uid}&region={region}"
         response = requests.get(api_url)
         
         if response.status_code == 200:
