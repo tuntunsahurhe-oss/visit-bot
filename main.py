@@ -76,28 +76,27 @@ def has_access(message):
         return False
     return True
 
-# --- JSON ফরম্যাট ফাংশন (প্রধান পরিবর্তন এখানে) ---
-def format_to_json_text(data):
+# --- নরমাল টেক্সট ফরম্যাট ফাংশন (Bold Font) ---
+def format_to_normal_text(data):
     """
-    API থেকে আসা ডাটাকে একটি সুন্দর JSON টেক্সট ফরম্যাটে রূপান্তর করে।
+    API ডাটাকে নরমাল বোল্ড টেক্সট হিসেবে সাজায়
     """
-    structured_data = {
-        "status": "success",
-        "account_info": {
-            "uid": data.get("uid") or data.get("UID") or "Unknown",
-            "nickname": data.get("nickname") or data.get("Nickname") or "Unknown",
-            "level": data.get("level") or data.get("Level") or "0"
-        },
-        "visit_details": {
-            "likes_before": data.get("likes_before") or data.get("Likes Before") or "0",
-            "visits_sent": data.get("sent_success") or data.get("Visits Sent") or "0",
-            "total_tried": data.get("total_tried") or data.get("Visits Sent") or "0"
-        },
-        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-        "developer": "@FREXY_OFC"
-    }
-    # indent=4 ব্যবহার করে সুন্দরভাবে সাজানো হয়েছে
-    return json.dumps(structured_data, indent=4, ensure_ascii=False)
+    uid = data.get("uid") or data.get("UID") or "N/A"
+    nickname = data.get("nickname") or data.get("Nickname") or "Unknown"
+    level = data.get("level") or data.get("Level") or "0"
+    likes_before = data.get("likes_before") or data.get("Likes Before") or "0"
+    visits_sent = data.get("sent_success") or data.get("Visits Sent") or "0"
+
+    text = (
+        f"<b>👤 PLAYER NAME: {nickname}</b>\n"
+        f"<b>🆔 PLAYER UID: {uid}</b>\n"
+        f"<b>📈 PLAYER LEVEL: {level}</b>\n"
+        f"<b>❤️ LIKES BEFORE: {likes_before}</b>\n"
+        f"<b>✅ VISITS SENT: {visits_sent}</b>\n"
+        f"<b>🕒 TIME: {time.strftime('%I:%M %p')}</b>\n"
+        f"<b>👨‍💻 BY: @FREXY_OFC</b>"
+    )
+    return text
 
 # --- অটো ভিজিট প্রসেস ---
 def auto_visit_task(chat_id, region, uid, minutes):
@@ -108,15 +107,15 @@ def auto_visit_task(chat_id, region, uid, minutes):
         try:
             api_url = f"https://visit-api-frexy.onrender.com/visit?uid={uid}&region={region}"
             res = requests.get(api_url).json()
-            json_output = format_to_json_text(res)
+            formatted_msg = format_to_normal_text(res)
             
             bot.send_message(
                 chat_id, 
-                f"<b>✅ AUTO VISIT SUCCESS!</b>\n\n<code>{json_output}</code>", 
+                f"<b>🚀 AUTO VISIT UPDATE</b>\n\n{formatted_msg}", 
                 parse_mode="HTML"
             )
-        except Exception as e:
-            print(f"Auto Visit Error: {e}")
+        except:
+            pass
         
         time.sleep(minutes * 60)
 
@@ -132,27 +131,27 @@ def visit_cmd(message):
     try:
         parts = message.text.split()
         if len(parts) < 3:
-            bot.reply_to(message, "<b>❌ ব্যবহার বিধি: /visit bd 123456</b>", parse_mode="HTML")
+            bot.reply_to(message, "<b>❌ সঠিক নিয়ম: /visit bd 123456</b>", parse_mode="HTML")
             return
             
         region, uid = parts[1].lower(), parts[2]
-        msg = bot.reply_to(message, "<b>⏳ Processing API Request...</b>", parse_mode="HTML")
+        msg = bot.reply_to(message, "<b>⏳ দয়া করে অপেক্ষা করুন...</b>", parse_mode="HTML")
         
         response = requests.get(f"https://visit-api-frexy.onrender.com/visit?uid={uid}&region={region}")
         
         if response.status_code == 200:
-            json_output = format_to_json_text(response.json())
+            formatted_msg = format_to_normal_text(response.json())
             bot.edit_message_text(
-                f"<b>🚀 VISIT SUCCESSFUL!</b>\n\n<code>{json_output}</code>", 
+                f"<b>🚀 VISIT SUCCESSFUL!</b>\n\n{formatted_msg}", 
                 chat_id=msg.chat.id, 
                 message_id=msg.message_id, 
                 parse_mode="HTML"
             )
         else:
-            bot.edit_message_text("<b>❌ API সার্ভার থেকে ভুল রেসপন্স এসেছে।</b>", chat_id=msg.chat.id, message_id=msg.message_id, parse_mode="HTML")
+            bot.edit_message_text("<b>❌ এপিআই সার্ভার ত্রুটি! আবার চেষ্টা করুন।</b>", chat_id=msg.chat.id, message_id=msg.message_id, parse_mode="HTML")
             
     except Exception as e:
-        bot.reply_to(message, f"<b>⚠️ Error: {str(e)}</b>", parse_mode="HTML")
+        bot.reply_to(message, f"<b>⚠️ সমস্যা হয়েছে: {str(e)}</b>", parse_mode="HTML")
 
 @bot.message_handler(commands=['autovisit'])
 def autovisit_cmd(message):
@@ -160,16 +159,16 @@ def autovisit_cmd(message):
     try:
         p = message.text.split()
         if len(p) < 3:
-            bot.reply_to(message, "<b>❌ Format: /autovisit bd 123 5</b>", parse_mode="HTML")
+            bot.reply_to(message, "<b>❌ ব্যবহার বিধি: /autovisit bd 123 5</b>", parse_mode="HTML")
             return
             
         region, uid = p[1], p[2]
         mins = int(p[3]) if len(p) > 3 else 5
         
         threading.Thread(target=auto_visit_task, args=(message.chat.id, region, uid, mins), daemon=True).start()
-        bot.reply_to(message, f"<b>✅ Auto-visit active for {uid}.\n⏱ ইন্টারভ্যাল: {mins} মিনিট।</b>", parse_mode="HTML")
+        bot.reply_to(message, f"<b>✅ অটো-ভিজিট শুরু হয়েছে!\n🆔 UID: {uid}\n⏱ প্রতি {mins} মিনিট পর পর।</b>", parse_mode="HTML")
     except:
-        bot.reply_to(message, "<b>❌ ভুল ফরম্যাট! সঠিক কমান্ড দিন।</b>", parse_mode="HTML")
+        bot.reply_to(message, "<b>❌ ভুল ইনপুট!</b>", parse_mode="HTML")
 
 @bot.message_handler(commands=['stopvisit'])
 def stop_cmd(message):
@@ -178,15 +177,14 @@ def stop_cmd(message):
         key = f"{message.chat.id}_{uid}"
         if key in auto_visit_threads:
             auto_visit_threads[key] = False
-            bot.reply_to(message, f"<b>🛑 Stopped auto-visit for: {uid}</b>", parse_mode="HTML")
+            bot.reply_to(message, f"<b>🛑 অটো-ভিজিট বন্ধ করা হয়েছে: {uid}</b>", parse_mode="HTML")
         else:
-            bot.reply_to(message, "<b>❌ এই UID-এর জন্য কোনো অটো-ভিজিট চালু নেই।</b>", parse_mode="HTML")
+            bot.reply_to(message, "<b>❌ এই আইডিতে কোনো অটো-ভিজিট চালু নেই।</b>", parse_mode="HTML")
     except:
         bot.reply_to(message, "<b>❌ ব্যবহার বিধি: /stopvisit 123456</b>", parse_mode="HTML")
 
 # --- রানার ---
 if __name__ == '__main__':
-    # Flask রান করা হচ্ছে আলাদা থ্রেডে
     threading.Thread(target=run_flask).start()
-    print("✅ BOT IS RUNNING...")
+    print("✅ BOT STARTED WITH NORMAL BOLD TEXT FORMAT!")
     bot.infinity_polling()
