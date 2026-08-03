@@ -12,7 +12,7 @@ ADMIN_ID = 6417430059
 ALLOWED_GROUP_ID = -1003765179070 # <--- আপনার মেইন গ্রুপ আইডি দিন যেখানে ভেরিফিকেশন লাগবে না
 
 # ডিফল্ট চ্যানেল লিস্ট (এডমিন এগুলো পরে পরিবর্তন করতে পারবে)
-REQUIRED_CHANNELS = ["@FREXY_OFC", "@FREXY_CHATS"] 
+REQUIRED_CHANNELS = ["@FREXY_OFC", "@YourChannel2"] 
 
 bot = telebot.TeleBot(API_TOKEN)
 
