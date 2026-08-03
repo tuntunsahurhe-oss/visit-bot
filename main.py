@@ -4,6 +4,7 @@ import json
 import time
 import threading
 import os
+import io
 from flask import Flask
 
 # --- কনফিগারেশন ---
@@ -42,7 +43,7 @@ START_TEXT = """
 <b>│⏳ ᴀᴜᴛᴏ ᴠɪsɪᴛ ꜱʏꜱᴛᴇᴍ</b>
 <b>╰━━━━━━━━━━━━━━━✪</b>
 
-<b>╭━⟮ 📋 ᴀᴠᴀɪʟᴀʙʟᴇ ᴄᴏᴍᴍᴀɴᴅs !</b>
+<b>╭━⟮ 📋 ᴀᴠᴀɪʟᴀʙʟᴇ ᴄᴏᴍᴀɴᴅs !</b>
 <b>│• ꜱᴇɴᴅ ᴘʀᴏꜰɪʟᴇ ᴠɪsɪᴛꜱ</b>
 <b>│• ╰ᐅ /visit [REGION] [UID]</b>
 <b>│• POWERED BY FREXY</b>
@@ -80,7 +81,6 @@ def has_access(message):
 
 # --- ফরম্যাট ফাংশন (JSON সাজানোর জন্য) ---
 def format_visit_response(data):
-    # এপিআই থেকে পাওয়া ডাটাগুলো আপনার দেওয়া ফরম্যাটে সাজানো
     output = {
         "level": data.get("level") or data.get("Level"),
         "likes_before": data.get("likes_before") or data.get("Likes Before"),
@@ -92,6 +92,18 @@ def format_visit_response(data):
     }
     return json.dumps(output, indent=2, ensure_ascii=False)
 
+# --- JSON ফাইল পাঠানোর হেল্পার ---
+def send_json_file(chat_id, json_text, caption, reply_to=None):
+    json_file = io.BytesIO(json_text.encode('utf-8'))
+    json_file.name = "result.json"
+    return bot.send_document(
+        chat_id, 
+        json_file, 
+        caption=caption, 
+        parse_mode="HTML", 
+        reply_to_message_id=reply_to
+    )
+
 # --- অটো ভিজিট প্রসেস ---
 def auto_visit_task(chat_id, region, uid, minutes):
     key = f"{chat_id}_{uid}"
@@ -101,7 +113,11 @@ def auto_visit_task(chat_id, region, uid, minutes):
         api_url = f"https://visit-api-frexy.onrender.com/visit?uid={uid}&region={region}"
         res = requests.get(api_url).json()
         json_text = format_visit_response(res)
-        bot.send_message(chat_id, f"<b>✅ AUTO VISIT ACTIVE!</b>\n\n<code>{json_text}</code>\n\n<b>👨‍💻 @FREXY_OFC</b>", parse_mode="HTML")
+        send_json_file(
+            chat_id, 
+            json_text, 
+            f"<b>✅ AUTO VISIT ACTIVE!</b>\n\n<b>👨‍💻 @FREXY_OFC</b>"
+        )
     except: pass
 
     while auto_visit_threads.get(key):
@@ -132,7 +148,14 @@ def visit_cmd(message):
         response = requests.get(f"https://visit-api-frexy.onrender.com/visit?uid={uid}&region={region}")
         if response.status_code == 200:
             json_text = format_visit_response(response.json())
-            bot.edit_message_text(f"<b>✅ SUCCESSFUL!</b>\n\n<code>{json_text}</code>\n\n<b>👨‍💻 @FREXY_OFC</b>", chat_id=msg.chat.id, message_id=msg.message_id, parse_mode="HTML")
+            # Processing মেসেজ ডিলিট করে JSON ফাইল পাঠাও
+            bot.delete_message(msg.chat.id, msg.message_id)
+            send_json_file(
+                msg.chat.id, 
+                json_text, 
+                f"<b>✅ SUCCESSFUL!</b>\n\n<b>👨‍💻 @FREXY_OFC</b>", 
+                reply_to=message.message_id
+            )
         else:
             bot.edit_message_text("<b>❌ API Error!</b>", chat_id=msg.chat.id, message_id=msg.message_id, parse_mode="HTML")
     except Exception as e:
@@ -170,5 +193,5 @@ def add_ch(message):
 # --- রানার ---
 if __name__ == '__main__':
     threading.Thread(target=lambda: bot.infinity_polling(timeout=20, long_polling_timeout=5)).start()
-    print("✅ BOT STARTED WITH FORMATTED JSON OUTPUT!")
+    print("✅ BOT STARTED WITH JSON FILE OUTPUT!")
     run_flask()
