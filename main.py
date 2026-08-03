@@ -12,7 +12,7 @@ ADMIN_ID = 6417430059
 ALLOWED_GROUP_ID = -1003765179070 # আপনার নির্দিষ্ট গ্রুপ আইডি
 
 # ডিফল্ট ২টা চ্যানেল লিঙ্ক
-REQUIRED_CHANNELS = ["@FREXY_OFC", "@YourChannel2"] 
+REQUIRED_CHANNELS = ["@FREXY_OFC", "@FREXY_CHATS"] 
 
 bot = telebot.TeleBot(API_TOKEN)
 server = Flask(__name__)
@@ -64,40 +64,51 @@ def has_access(message):
     uid = message.from_user.id
     cid = message.chat.id
     
-    # এডমিন সব জায়গায় পারবে
     if uid == ADMIN_ID: return True
     
-    # প্রাইভেট চ্যাটে এডমিন ছাড়া কেউ পারবে না
     if message.chat.type == "private":
         bot.reply_to(message, "<b>❌ এই বটটি শুধুমাত্র গ্রুপে ব্যবহারের জন্য।</b>", parse_mode="HTML")
         return False
     
-    # নির্দিষ্ট গ্রুপে ভেরিফিকেশন লাগবে না
     if cid == ALLOWED_GROUP_ID: return True
     
-    # অন্য গ্রুপে ২টা চ্যানেল জয়েন চেক
     if not is_subscribed(uid):
         links = "\n".join(REQUIRED_CHANNELS)
         bot.reply_to(message, f"<b>⚠️ অ্যাক্সেস ডিনাইড!\n\nবটটি ব্যবহার করতে নিচের চ্যানেলগুলোতে জয়েন করুন:</b>\n{links}", parse_mode="HTML")
         return False
     return True
 
+# --- ফরম্যাট ফাংশন (JSON সাজানোর জন্য) ---
+def format_visit_response(data):
+    # এপিআই থেকে পাওয়া ডাটাগুলো আপনার দেওয়া ফরম্যাটে সাজানো
+    output = {
+        "level": data.get("level") or data.get("Level"),
+        "likes_before": data.get("likes_before") or data.get("Likes Before"),
+        "nickname": data.get("nickname") or data.get("Nickname"),
+        "sent_success": data.get("sent_success") or data.get("Visits Sent"),
+        "status": "Success",
+        "total_tried": data.get("total_tried") or data.get("Visits Sent"),
+        "uid": data.get("uid") or data.get("UID")
+    }
+    return json.dumps(output, indent=2, ensure_ascii=False)
+
 # --- অটো ভিজিট প্রসেস ---
 def auto_visit_task(chat_id, region, uid, minutes):
     key = f"{chat_id}_{uid}"
     auto_visit_threads[key] = True
+    
     try:
         api_url = f"https://visit-api-frexy.onrender.com/visit?uid={uid}&region={region}"
-        data = requests.get(api_url).json()
-        # JSON ফরম্যাটে ডাটা তৈরি
-        json_output = json.dumps(data, indent=2, ensure_ascii=False)
-        bot.send_message(chat_id, f"<b>✅ AUTO VISIT ACTIVE!</b>\n\n<code>{json_output}</code>\n\n<b>👨‍💻 @FREXY_OFC</b>", parse_mode="HTML")
+        res = requests.get(api_url).json()
+        json_text = format_visit_response(res)
+        bot.send_message(chat_id, f"<b>✅ AUTO VISIT ACTIVE!</b>\n\n<code>{json_text}</code>\n\n<b>👨‍💻 @FREXY_OFC</b>", parse_mode="HTML")
     except: pass
 
     while auto_visit_threads.get(key):
         time.sleep(minutes * 60)
         if not auto_visit_threads.get(key): break
-        try: requests.get(f"https://visit-api-frexy.onrender.com/visit?uid={uid}&region={region}")
+        try: 
+            requests.get(f"https://visit-api-frexy.onrender.com/visit?uid={uid}&region={region}")
         except: pass
 
 # --- কমান্ড হ্যান্ডলার ---
@@ -120,9 +131,8 @@ def visit_cmd(message):
         
         response = requests.get(f"https://visit-api-frexy.onrender.com/visit?uid={uid}&region={region}")
         if response.status_code == 200:
-            # JSON ডাটা সুন্দর করে ফরম্যাট করা
-            json_data = json.dumps(response.json(), indent=2, ensure_ascii=False)
-            bot.edit_message_text(f"<b>✅ SUCCESSFUL!</b>\n\n<code>{json_data}</code>\n\n<b>👨‍💻 @FREXY_OFC</b>", chat_id=msg.chat.id, message_id=msg.message_id, parse_mode="HTML")
+            json_text = format_visit_response(response.json())
+            bot.edit_message_text(f"<b>✅ SUCCESSFUL!</b>\n\n<code>{json_text}</code>\n\n<b>👨‍💻 @FREXY_OFC</b>", chat_id=msg.chat.id, message_id=msg.message_id, parse_mode="HTML")
         else:
             bot.edit_message_text("<b>❌ API Error!</b>", chat_id=msg.chat.id, message_id=msg.message_id, parse_mode="HTML")
     except Exception as e:
@@ -148,7 +158,6 @@ def stop_cmd(message):
         bot.reply_to(message, f"<b>🛑 Stopped auto-visit for: {uid}</b>", parse_mode="HTML")
     except: pass
 
-# --- এডমিন কমান্ড (চ্যানেল ম্যানেজমেন্ট) ---
 @bot.message_handler(commands=['addchannel'])
 def add_ch(message):
     if message.from_user.id == ADMIN_ID:
@@ -160,9 +169,6 @@ def add_ch(message):
 
 # --- রানার ---
 if __name__ == '__main__':
-    # ১. টেলিগ্রাম বট ব্যাকগ্রাউন্ড থ্রেডে
     threading.Thread(target=lambda: bot.infinity_polling(timeout=20, long_polling_timeout=5)).start()
-    
-    # ২. ফ্লাস্ক সার্ভার মেইন থ্রেডে (Render Port Fix)
-    print("✅ BOT STARTED WITH JSON OUTPUT & PORT BINDING!")
+    print("✅ BOT STARTED WITH FORMATTED JSON OUTPUT!")
     run_flask()
